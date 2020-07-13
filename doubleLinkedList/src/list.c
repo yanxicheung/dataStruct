@@ -3,7 +3,27 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct llist_node_st*find_(LLIST* list, const void* key, llist_cmp* cmp)
+struct llist_node_st
+{
+//    void *data;
+    struct llist_node_st *prev;
+    struct llist_node_st *next;
+    /*
+     * 变长结构体 柔性数组 作为占位符号;
+     * C99才支持 ;
+     * 写成char data[1]比较保险;
+     * */
+    char data[0];
+};
+
+struct llist_head_st
+{
+    int size;
+    struct llist_node_st head;
+};
+
+
+static struct llist_node_st*find_(struct llist_head_st *list, const void* key, llist_cmp* cmp)
 {
     struct llist_node_st *cur;
     for(cur = list->head.next;cur != &list->head;cur = cur->next)
@@ -13,7 +33,7 @@ static struct llist_node_st*find_(LLIST* list, const void* key, llist_cmp* cmp)
     return cur;  // if not find return &list->head;
 }
 
-static int llist_fetch_(LLIST* list, const void* key, llist_cmp* cmp, void* data)
+static int llist_fetch_(struct llist_head_st *list, const void* key, llist_cmp* cmp, void* data)
 {
     struct llist_node_st* node;
     node = find_(list,key,cmp);
@@ -32,8 +52,8 @@ static int llist_fetch_(LLIST* list, const void* key, llist_cmp* cmp, void* data
 
 LLIST* llist_create(int size)
 {
-    LLIST *head;
-    head = (LLIST*)malloc(sizeof(*head));
+    struct llist_head_st *head;
+    head = (struct llist_head_st *)malloc(sizeof(*head));
 
     if(head == NULL) return NULL;
 
@@ -43,9 +63,10 @@ LLIST* llist_create(int size)
     return head;
 }
 
-int llist_insert(LLIST* list, const void* data, int mode)
+int llist_insert(LLIST* l, const void* data, int mode)
 {
     struct llist_node_st *newnode;
+    struct llist_head_st *list = (struct llist_head_st *)l;
     newnode = (struct llist_node_st *)malloc(sizeof(*newnode) + list->size);
 
     if(newnode == NULL) return -1;
@@ -70,18 +91,20 @@ int llist_insert(LLIST* list, const void* data, int mode)
     newnode->next->prev = newnode;
 }
 
-void llist_travel(LLIST* list,llist_op* callback)
+void llist_travel(LLIST* l,llist_op* callback)
 {
     struct llist_node_st *cur;
+    struct llist_head_st *list = (struct llist_head_st *)l;
     for(cur = list->head.next;cur != &list->head;cur = cur->next)
     {
         callback(cur->data);
     }
 }
 
-void llist_destroy(LLIST* list)
+void llist_destroy(LLIST* l)
 {
     struct llist_node_st *cur,*next;
+    struct llist_head_st *list = (struct llist_head_st *)l;
     for(cur = list->head.next;cur != &list->head;cur = cur->next)
     {
         next = cur->next;
@@ -90,9 +113,10 @@ void llist_destroy(LLIST* list)
     free(list);
 }
 
-void* llist_find(LLIST* list, const void* key, llist_cmp* cmp)
+void* llist_find(LLIST* l, const void* key, llist_cmp* cmp)
 {
     struct llist_node_st *node;
+    struct llist_head_st *list = (struct llist_head_st *)l;
     node = find_(list,key,cmp);
     if(node == &list->head)
         return NULL;
@@ -101,10 +125,10 @@ void* llist_find(LLIST* list, const void* key, llist_cmp* cmp)
 
 int llist_delete(LLIST* list, const void* key, llist_cmp* cmp)
 {
-    return llist_fetch_(list, key, cmp, NULL);
+    return llist_fetch_((struct llist_head_st *)list, key, cmp, NULL);
 }
 
 int llist_fetch(LLIST* list, const void* key, llist_cmp* cmp, void* data)
 {
-    return llist_fetch_(list, key, cmp, data);
+    return llist_fetch_((struct llist_head_st *)list, key, cmp, data);
 }

@@ -12,24 +12,7 @@ extern "C"
 typedef void llist_op(const void *arg);
 typedef int llist_cmp(const void *key,const void *data);
 
-struct llist_node_st
-{
-//    void *data;
-    struct llist_node_st *prev;
-    struct llist_node_st *next;
-    /*
-     * 变长结构体 柔性数组 作为占位符号;
-     * C99才支持 ;
-     * 写成char data[1]比较保险;
-     * */
-    char data[0];
-};
-
-typedef struct
-{
-    int size;
-    struct llist_node_st head;
-}LLIST;
+typedef void LLIST;
 
 LLIST* llist_create(int size);  //创建包含头节点的链表
 
